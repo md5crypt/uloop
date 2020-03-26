@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: MIT
+
+#pragma once
+
+#include "uloop.h"
+
+<? config.uloop.listeners.map(listener => 
+	`extern void ${listener.function}(uloop_event_t event${
+		(config.uloop.defines.dataQueueSize == 0) ? '' : ', const void* data, uint32_t size'
+	});`).join("\n")
+?>

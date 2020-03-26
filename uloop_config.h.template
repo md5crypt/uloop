@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: MIT
+
+#pragma once
+
+<? C.defineGroup(config.uloop.defines, 'ULOOP_') ?>
+
+#define ULOOP_LISTENER_COUNT      <? config.uloop.listeners.length ?>
+#define ULOOP_LISTENER_TABLE_SIZE <? config.uloop.listeners.reduce((a,b) => a + b.events.length, 0) + config.uloop.events.length ?>
+#define ULOOP_EVENT_COUNT         <? config.uloop.events.length ?>
+
+<? config.uloop.events.map((event, i) => C.define(config.uloop.prefix + event.name, i)).join('') ?>

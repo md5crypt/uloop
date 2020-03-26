@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: MIT
+
+#pragma once
+
+#define ULOOP_TIMER_COUNT <? config.uloop.timer.timers.length ?>
+
+<? config.uloop.timer.timers.map((timer, i) => C.define(config.uloop.timer.prefix + timer.name, i)).join('') ?>

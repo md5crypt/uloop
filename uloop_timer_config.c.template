@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: MIT
+
+#include "uloop.h"
+#include "uloop_timer.h"
+
+const uloop_event_t uloop_timer_events[ULOOP_TIMER_COUNT] = {
+	<? config.uloop.timer.timers.map(timer => config.uloop.prefix + timer.event).join(",\n\t") ?>
+};

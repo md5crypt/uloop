@@ -1,0 +1,92 @@
+// SPDX-License-Identifier: MIT
+
+#include "uloop.h"
+#include "uloop_listeners.h"
+
+const uloop_listener_t uloop_listeners[ULOOP_LISTENER_COUNT] = {
+	<? config.uloop.listeners.map(listener => listener.function).join(",\n\t") ?>
+};
+
+<??
+	const eventMap = new Map()
+	const listenerTable = new Array(config.uloop.events.length).fill(0).map(x => [])
+	const lut = [0]
+	config.uloop.events.forEach((event, i) => eventMap.set(event.name, i))
+	config.uloop.listeners.forEach((listener, i) => {
+		listener.events.forEach(event => {
+			const id = eventMap.get(event)
+			if (id === undefined) {
+				throw new Error(`unknown event '${event}' in listener '${listener.function}'`)
+			}
+			listenerTable[id].push(i)
+		})
+	})
+	listenerTable.forEach(row => {
+		row.push("ULOOP_LISTENER_NONE")
+		lut.push(lut[lut.length - 1] + row.length)
+	})
+??>
+
+const uloop_listener_id_t uloop_listener_table[ULOOP_LISTENER_TABLE_SIZE] = {
+	<? listenerTable.map(row => row.join(", ")).join(",\n\t") ?>
+};
+
+const uloop_listener_lut_t uloop_listener_lut[ULOOP_EVENT_COUNT] = {
+	<? lut.slice(0, -1).join(",\n\t") ?>
+};
+
+<??
+	function slugify(name, size, keyword) {
+		const list = name.toLocaleLowerCase().split('_').filter(x => x != keyword)
+		if (list.length == 0) {
+			list.push(keyword)
+		}
+		const n = Math.min(3, Math.floor(size / list.length))
+		const T = Array(list.length).fill(0)
+		let pool = size
+		for (let i = list.length - 1; (i >= 0) && (pool > 0); i--) {
+			T[i] += 1;
+			pool -= 1
+		}
+		for (let i = list.length - 1; (i >= 0) && (pool > 0); i--) {
+			const delta = Math.min(pool, 3 - T[i])
+			T[i] += delta;
+			pool -= delta;
+		}
+		for (let i = list.length - 1; (i >= 0) && (pool > 0); i--) {
+			const delta = Math.min(pool, list[i].length - T[i])
+			T[i] += delta;
+			pool -= delta;
+		}
+		return list
+			.map((x, i) => x.slice(0, T[i]))
+			.map((x, i) => (i == 0) ? x : (x ? x[0].toLocaleUpperCase() + x.slice(1) : ''))
+			.join('')
+	}
+	function mkMetadata(o, type) {
+		const map = new Map()
+		return o.map(([name, meta]) => {
+			const slug = meta || slugify(name, config.uloop.defines.metadataNameSize, type)
+			if (map.has(slug)) {
+				console.warn(`warning: non unique metadata '${slug}' for ${type} '${name}' (conflicts with '${map.get(slug)}')`)
+			} else {
+				map.set(slug, name)
+			}
+			return slug
+		})
+	}
+	config.uloop.defines.metadataEnabled && (
+		'\n' + C.array(
+			'uloop_event_names',
+			'const uloop_name_t',
+			'ULOOP_EVENT_COUNT',
+			'{\n\t' + mkMetadata(config.uloop.events.map(e => [e.name, e.metadata]), "event").map(slug => '{"' + slug + '"}').join(',\n\t') + '\n}'
+		) + '\n\n' +
+		C.array(
+			'uloop_listener_names',
+			'const uloop_name_t',
+			'ULOOP_LISTENER_COUNT',
+			'{\n\t' + mkMetadata(config.uloop.listeners.map(l => [l.function, l.metadata]), "listener").map(slug => '{"' + slug + '"}').join(',\n\t') + '\n}'
+		) + '\n'
+	)
+??>
